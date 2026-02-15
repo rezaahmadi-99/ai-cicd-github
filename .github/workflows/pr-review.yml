@@ -1,64 +1,3 @@
-name: AI code review
-
-on:
-  pull-request:
-    branches:
-      - main
-
-permission:
-  contents: read
-  pull-requests: write
-
-jobs:
-  # review is the job_id and name is what will be shown in github UI
-  review:
-    name: "Pull Request with AI Review"
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Clone the repo
-        uses: actions/checkout@v4
-        with:
-          # by setting this to 0, git fetches the entire commit history rather than
-          # its default which is a shallow clone
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-
-      - name: Install dependencies
-        run: pip install -r requiremenets.txt
-
-      - name: Save git diff to a txt file
-        run: |
-          git diff origin/main...HEAD > df.txt
-
-      - name: Get AI review
-        id: ai-review
-        env:
-          GEMINI_API_KEY: ${{secrets.GEMINI_API_KEY}}
-        run: |
-          REVIEW=$(python scripts/ai_review.py df.txt)
-          echo "review<<EOF" >> $GITHUB_OUTPUT
-          echo "$REVIEW" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Post review comment
-        uses: actions/github-script@v7
-        env:
-          REVIEW: ${{steps.ai-review.outputs.review}}
-        with:
-          script: |
-            const review = process.env.REVIEW;
-
-            await github.rest.issues.get({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: ```yaml
-name: AI Code Review
-
 on:
   pull_request:
     branches: [main]
@@ -80,7 +19,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
